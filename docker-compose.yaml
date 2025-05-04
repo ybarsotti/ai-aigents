@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: llm-app
+    ports:
+      - "8888:8888" # Jupyter
+      - "8000:8000" # FastAPI
+    volumes:
+      - .:/app

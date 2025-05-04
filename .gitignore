@@ -1,0 +1,14 @@
+.env
+.Trash*
+*chroma*
+
+.ipynb_checkpoints/
+
+__pycache__/
+*.pyc
+
+*.log
+docker-compose.override.yml
+
+venv/
+env/
