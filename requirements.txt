@@ -21,3 +21,5 @@ langchain-community
 google-generativeai
 langchain-google-genai
 langchain_chroma
+pinecone
+boto3
