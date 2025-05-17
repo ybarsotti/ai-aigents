@@ -1,40 +1,40 @@
 import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from starlette.responses import JSONResponse
 from slowapi.middleware import SlowAPIMiddleware
-from dotenv import load_dotenv
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from starlette.responses import JSONResponse
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_chroma import Chroma
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
+from pinecone import Pinecone
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_pinecone import PineconeVectorStore
 
 load_dotenv()
-
-DATA_DIR = "./data"
 
 app = FastAPI()
 header_scheme = APIKeyHeader(name="x-key")
 
 
 def init_llm():
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    vector_store = Chroma(
-        collection_name="yuri_data_1",
-        embedding_function=embeddings,
-        persist_directory="./chroma_data",
-    )
+    index_name = "yuri-data"
 
-    retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+    pc = Pinecone(api_key=os.getenv("PINECONE_KEY"))
+    index = pc.Index(index_name)
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    vector_store = PineconeVectorStore(index=index, embedding=embeddings)
+
+    retriever = vector_store.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={"k": 3, "score_threshold": 0.5},
+    )
 
     with open(
         "./prompts/system_prompt.txt", "r", encoding="utf-8"
@@ -53,8 +53,8 @@ def init_llm():
 
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-flash",
-        temperature=0.5,
-        max_tokens=300,
+        temperature=0.6,
+        max_tokens=200,
         max_retries=2,
     )
 
@@ -66,15 +66,10 @@ class Question(BaseModel):
     query: str
 
 
-def check_api_key(key: str):
-    """
-    This key is kinda exposed, but no problem.
-    """
-    if key != os.environ.get("API_KEY"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid API key",
-        )
+def verify_token(x_key: str = Header(None)):
+    if not x_key or x_key != os.environ.get("API_KEY"):
+        raise HTTPException(status_code=401, detail="Token?")
+    return True
 
 
 limiter = Limiter(key_func=get_remote_address)
@@ -90,17 +85,19 @@ app.add_exception_handler(
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://portfolio-v2-pearl-one.vercel.app"],
+    allow_origins=[
+        "https://portfolio-v2-pearl-one.vercel.app",
+        "https://yuribarsotti.tech",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["x-key"],
 )
 
 
-@app.post("/chat")
-@limiter.limit("30/minute")
-def chat(request: Request, q: Question, key: str = Depends(header_scheme)):
-    check_api_key(key)
+@app.post("/chat", dependencies=[Depends(verify_token)])
+@limiter.limit("12/minute")
+def chat(request: Request, q: Question):
     llm = init_llm()
     result = llm.invoke({"input": q.query})
     return {"response": result["answer"]}

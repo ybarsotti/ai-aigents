@@ -4,15 +4,14 @@ WORKDIR /app
 
 ARG GOOGLE_API_KEY
 ARG API_KEY
+ARG PINECONE_API
 
+ENV PINECONE_API=${PINECONE_API}
 ENV GOOGLE_API_KEY=${GOOGLE_API_KEY}
 ENV API_KEY=${API_KEY}
 
-RUN apt-get update && \
-    apt-get install -y sqlite3 libsqlite3-dev gcc && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

@@ -1,15 +1,11 @@
 langchain
-langchain-chroma
 langchain-community
 langchain-core
+langchain-pinecone
 langchain-text-splitters
 langchain-google-genai
-sentence-transformers
 fastapi
 uvicorn
-chromadb
 pydantic
-db-sqlite3
 slowapi
-boto3
 pinecone
