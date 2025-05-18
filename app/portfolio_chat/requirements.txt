@@ -2,8 +2,7 @@ langchain
 langchain-community
 langchain-core
 langchain-pinecone
-langchain-text-splitters
-langchain-google-genai
+langchain-openai
 fastapi
 uvicorn
 pydantic
