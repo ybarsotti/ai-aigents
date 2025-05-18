@@ -9,12 +9,12 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import JSONResponse
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from pinecone import Pinecone
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 
 load_dotenv()
@@ -28,7 +28,7 @@ def init_llm():
 
     pc = Pinecone(api_key=os.getenv("PINECONE_KEY"))
     index = pc.Index(index_name)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
     vector_store = PineconeVectorStore(index=index, embedding=embeddings)
 
     retriever = vector_store.as_retriever(
@@ -45,17 +45,18 @@ def init_llm():
         [
             (
                 "system",
-                system_instructions,
+                system_instructions.strip(),
             ),
             ("human", "{input}"),
         ]
     )
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        temperature=0.6,
-        max_tokens=200,
+    llm = ChatOpenAI(
+        model="gpt-3.5-turbo",
+        temperature=0.5,
+        max_tokens=150,
         max_retries=2,
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
     )
 
     combine_docs_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
