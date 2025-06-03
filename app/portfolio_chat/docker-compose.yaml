@@ -1,16 +1,11 @@
 services:
   app:
     container_name: rag_chat
+    tty: true
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        API_KEY: ${API_KEY}
-        DEBUG_MODE: ${DEBUG_MODE}
     ports:
       - "3005:3000"
     volumes:
       - .:/app
-    environment:
-      - DEBUG=${DEBUG}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}

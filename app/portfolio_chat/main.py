@@ -1,25 +1,26 @@
 import os
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request, Header
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone
+
+from pydantic import BaseModel
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 from starlette.responses import JSONResponse
-from langchain_openai import ChatOpenAI
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
-from pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings
-from langchain_pinecone import PineconeVectorStore
 
 load_dotenv()
 
 app = FastAPI()
+
 header_scheme = APIKeyHeader(name="x-key")
 
 
@@ -88,7 +89,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://portfolio-v2-pearl-one.vercel.app",
-        "https://yuribarsotti.tech",
+        "https://www.yuribarsotti.tech",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -102,3 +103,4 @@ def chat(request: Request, q: Question):
     llm = init_llm()
     result = llm.invoke({"input": q.query})
     return {"response": result["answer"]}
+
