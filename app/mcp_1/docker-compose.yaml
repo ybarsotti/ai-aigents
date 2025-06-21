@@ -1,0 +1,23 @@
+services:
+  mcp:
+    container_name: mcp_server
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8000"
+      - "6277:6277"
+      - "6274:6274"
+    volumes:
+      - .:/app
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+
+        - action: rebuild
+          path: ./pyproject.toml
