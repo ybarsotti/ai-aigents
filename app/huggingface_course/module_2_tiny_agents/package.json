@@ -1,0 +1,17 @@
+{
+  "name": "module_2_tiny_agents",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start_agent": "node ./agent.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@huggingface/tiny-agents": "^0.2.3",
+    "mcp-remote": "^0.1.16"
+  }
+}
