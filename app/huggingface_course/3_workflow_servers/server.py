@@ -2,9 +2,11 @@
 import json
 import os
 import subprocess
+import requests
 from typing import Optional
 from pathlib import Path
 
+from mcp.types import TextContent
 from mcp.server.fastmcp import FastMCP
 
 # Initialize the FastMCP server
@@ -406,6 +408,67 @@ Structure your response as:
 ### 📚 Resources
 - [Relevant documentation links]
 - [Similar issues or solutions]"""
+
+
+@mcp.tool()
+def send_slack_notification(message: str) -> str:
+    """Send a formatted notification to the team Slack channel."""
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        return "Error: SLACK_WEBHOOK_URL environment variable not set"
+
+    try:
+        payload = {"text": message, "mrkdwn": True}
+
+        response = requests.post(
+            webhook_url, json=payload, headers={"Content-Type": "application/json"}
+        )
+
+        if response.status_code == 200:
+            return "Success: Notification sent to Slack"
+        else:
+            return f"Error: Failed to send notification. Status code: {response.status_code}"
+    except Exception as e:
+        return f"Error sending message: {str(e)}"
+
+
+@mcp.prompt()
+def format_ci_failure_alert() -> str:
+    """Create a Slack alert for CI/CD failures."""
+    return """Format this GitHub Actions failure as a Slack message:
+
+Use this template:
+:rotating_light: *CI Failure Alert* :rotating_light:
+
+A CI workflow has failed:
+*Workflow*: workflow_name
+*Branch*: branch_name
+*Status*: Failed
+*View Details*: <LOGS_LINK|View Logs>
+
+Please check the logs and address any issues.
+
+Use Slack markdown formatting and keep it concise for quick team scanning."""
+
+
+@mcp.prompt()
+def format_ci_success_summary() -> str:
+    """Create a Slack message celebrating successful deployments."""
+    return """Format this successful GitHub Actions run as a Slack message:
+
+Use this template:
+:white_check_mark: *Deployment Successful* :white_check_mark:
+
+Deployment completed successfully for [Repository Name]
+
+*Changes:*
+- Key feature or fix 1
+- Key feature or fix 2
+
+*Links:*
+<PR_LINK|View Changes>
+
+Keep it celebratory but informative. Use Slack markdown formatting."""
 
 
 if __name__ == "__main__":
