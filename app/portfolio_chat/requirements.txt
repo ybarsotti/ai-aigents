@@ -3,6 +3,7 @@ langchain-community
 langchain-core
 langchain-pinecone
 langchain-openai
+langgraph
 fastapi
 uvicorn
 pydantic
