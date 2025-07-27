@@ -1,20 +1,20 @@
-import os
 import asyncio
+import os
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
-from langchain.agents.output_parsers import JSONAgentOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.tools.render import render_text_description_and_args
+from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad import format_log_to_str
+from langchain.agents.output_parsers import JSONAgentOutputParser
+from langchain.tools.render import render_text_description_and_args
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
-from langchain.agents import AgentExecutor
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -22,6 +22,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from starlette.responses import JSONResponse
 from telegram import Bot
+
+from logger import log_to_telegram
 
 load_dotenv()
 
@@ -41,10 +43,16 @@ class Message(BaseModel):
 
 @tool("send_message-tool", args_schema=Message)
 async def send_message(name: str, message: str) -> str:
-    """Sends message."""
-    final_msg = f"📬 Message from {name} via agent\n\n{message}"
+    """Sends a message to Yuri, this tool should be used sending the sender name and the message, the message should not be edited and be sent as it was received by the human."""
+    final_msg = (
+        f"📬 New message received via agent in Portfolio:\n\n"
+        f"👤 *Name*: `{name}`\n\n"
+        f"💬 *Message*:\n`{message}`\n\n"
+    )
     asyncio.create_task(
-        telegram_bot.send_message(chat_id=os.getenv("TELEGRAM_CHAT_ID"), text=final_msg)
+        telegram_bot.send_message(
+            chat_id=os.getenv("TELEGRAM_CHAT_ID"), text=final_msg, parse_mode="Markdown"
+        )
     )
     return "Message sent successfully!"
 
@@ -168,4 +176,5 @@ async def startup_event():
 @limiter.limit("12/minute")
 async def chat(request: Request, q: Question):
     result = await agent.ainvoke({"input": q.query})
+    await log_to_telegram(q.query, result["output"])
     return {"response": result["output"]}
