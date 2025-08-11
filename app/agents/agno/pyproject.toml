@@ -1,0 +1,21 @@
+[project]
+name = "agno-poc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "agno>=1.7.9",
+    "aiohttp>=3.12.15",
+    "anthropic>=0.62.0",
+    "duckduckgo-search>=8.1.1",
+    "fastapi[standard]>=0.116.1",
+    "google-genai>=1.29.0",
+    "lancedb>=0.24.2",
+    "openai>=1.99.6",
+    "packaging>=25.0",
+    "pylance>=0.32.1",
+    "sqlalchemy>=2.0.42",
+    "tantivy>=0.24.0",
+    "yfinance>=0.2.65",
+]
