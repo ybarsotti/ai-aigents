@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database with pgvector extension
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: agent-app-db
+    environment:
+      POSTGRES_USER: ai
+      POSTGRES_PASSWORD: ai
+      POSTGRES_DB: ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai -d ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application service (can run different commands)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-app
+    environment:
+      - RUNTIME_ENV=dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EXA_API_KEY=${EXA_API_KEY}
+      - AGNO_MONITOR=True
+      - AGNO_API_KEY=${AGNO_API_KEY}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=ai
+      - DB_PASS=ai
+      - DB_DATABASE=ai
+      - WAIT_FOR_DB=true
+      - MIGRATE_DB=true
+      - PRINT_ENV_ON_LOAD=false
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["chill"]
+
+  # Streamlit UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-app-ui
+    environment:
+      - RUNTIME_ENV=dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EXA_API_KEY=${EXA_API_KEY}
+      - AGNO_MONITOR=True
+      - AGNO_API_KEY=${AGNO_API_KEY}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=ai
+      - DB_PASS=ai
+      - DB_DATABASE=ai
+      - WAIT_FOR_DB=true
+      - MIGRATE_DB=true
+      - PYTHONPATH=/app
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["streamlit", "run", "ui/Home.py", "--server.headless", "true", "--server.address", "0.0.0.0", "--server.port", "8501"]
+
+  # FastAPI server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-app-api
+    environment:
+      - RUNTIME_ENV=dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EXA_API_KEY=${EXA_API_KEY}
+      - AGNO_MONITOR=True
+      - AGNO_API_KEY=${AGNO_API_KEY}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=ai
+      - DB_PASS=ai
+      - DB_DATABASE=ai
+      - WAIT_FOR_DB=true
+      - MIGRATE_DB=false  # Only migrate once from UI service
+      - PYTHONPATH=/app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: agent-app

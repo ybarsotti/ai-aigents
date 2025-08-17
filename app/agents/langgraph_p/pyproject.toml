@@ -1,0 +1,20 @@
+[project]
+name = "langgraph_p"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.12.15",
+    "fastapi[standard]>=0.116.1",
+    "google-genai>=1.29.0",
+    "lancedb>=0.24.2",
+    "langchain[google-genai]>=0.3.27",
+    "langchain-google-genai>=2.1.9",
+    "langchain-openai>=0.3.29",
+    "langgraph>=0.6.4",
+    "langsmith>=0.4.13",
+    "sqlalchemy>=2.0.43",
+    "ipython>=9.4.0",
+    "grandalf>=0.8",
+]
